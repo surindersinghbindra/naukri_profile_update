@@ -130,7 +130,6 @@ class Notifier:
 
         message += f"🔴 *Error*: `{error[:400]}`\n\n"
         message += f"💡 _Check logs/screenshots for details._"
-        )
 
         self._send_message(message)
 
