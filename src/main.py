@@ -130,17 +130,27 @@ def main():
             notifier.send_dry_run()
             return 0
 
+        failures = []
+
         # ── Step 3: Upload resume (if enabled) ──
         logger.info("\n" + "─" * 40)
         logger.info("📄 STEP 1/4: Resume Upload")
         logger.info("─" * 40)
         if not config.enable_resume_upload:
+            results["resume_status"] = "⏭️ Skipped (Disabled)"
             logger.info("⏭️  SKIPPED — resume upload is disabled (ENABLE_RESUME_UPLOAD=false)")
         else:
             try:
                 results["resume_uploaded"] = upload_resume(page, config)
+                if results["resume_uploaded"]:
+                    results["resume_status"] = "✅ Uploaded"
+                else:
+                    results["resume_status"] = "❌ Failed"
+                    failures.append("Step 1 (Resume Upload)")
             except Exception as exc:
                 logger.error(f"Resume upload error: {exc}")
+                results["resume_status"] = f"❌ Failed"
+                failures.append("Step 1 (Resume Upload)")
                 take_screenshot(page, config.screenshot_dir, "resume_error")
 
         human_delay(config.human_delay_min, config.human_delay_max)
@@ -150,6 +160,7 @@ def main():
         logger.info("📝 STEP 2/4: Headline Rotation")
         logger.info("─" * 40)
         if not config.should_rotate_headline:
+            results["headline_status"] = "⏭️ Skipped (Disabled)"
             logger.info("⏭️  SKIPPED — headline rotation is disabled or HEADLINES is blank")
         else:
             try:
@@ -157,8 +168,14 @@ def main():
                 if results["headline_rotated"]:
                     from .headline_rotator import _pick_headline
                     results["headline_text"] = _pick_headline(config.headlines)
+                    results["headline_status"] = "✅ Rotated"
+                else:
+                    results["headline_status"] = "❌ Failed"
+                    failures.append("Step 2 (Headline Rotation)")
             except Exception as exc:
                 logger.error(f"Headline rotation error: {exc}")
+                results["headline_status"] = f"❌ Failed"
+                failures.append("Step 2 (Headline Rotation)")
                 take_screenshot(page, config.screenshot_dir, "headline_error")
 
         human_delay(config.human_delay_min, config.human_delay_max)
@@ -168,12 +185,20 @@ def main():
         logger.info("🔧 STEP 3/4: Key Skills Update")
         logger.info("─" * 40)
         if not config.should_update_skills:
+            results["skills_status"] = "⏭️ Skipped (Disabled)"
             logger.info("⏭️  SKIPPED — skills update is disabled or KEY_SKILLS is blank")
         else:
             try:
                 results["skills_updated"] = update_key_skills(page, config)
+                if results["skills_updated"]:
+                    results["skills_status"] = "✅ Updated"
+                else:
+                    results["skills_status"] = "❌ Failed"
+                    failures.append("Step 3 (Key Skills Update)")
             except Exception as exc:
                 logger.error(f"Skills update error: {exc}")
+                results["skills_status"] = f"❌ Failed"
+                failures.append("Step 3 (Key Skills Update)")
                 take_screenshot(page, config.screenshot_dir, "skills_error")
 
         human_delay(config.human_delay_min, config.human_delay_max)
@@ -184,9 +209,18 @@ def main():
         logger.info("─" * 40)
         try:
             results["summary_updated"] = update_profile_summary(page, config)
+            if results["summary_updated"]:
+                results["summary_status"] = "✅ Touched"
+            else:
+                results["summary_status"] = "❌ Failed"
+                failures.append("Step 4 (Profile Summary)")
         except Exception as exc:
             logger.error(f"Summary update error: {exc}")
+            results["summary_status"] = f"❌ Failed"
+            failures.append("Step 4 (Profile Summary)")
             take_screenshot(page, config.screenshot_dir, "summary_error")
+
+        results["failures"] = failures
 
         # ── Step 7: Save session & report ──
         browser_manager.save_session()
@@ -202,10 +236,10 @@ def main():
         logger.info("\n" + "=" * 60)
         if any_success:
             logger.info("🎉 Profile refresh COMPLETE!")
-            logger.info(f"   📄 Resume:   {'✅' if results['resume_uploaded'] else '⏭️'}")
-            logger.info(f"   📝 Headline: {'✅' if results['headline_rotated'] else '⏭️'}")
-            logger.info(f"   🔧 Skills:   {'✅' if results['skills_updated'] else '⏭️'}")
-            logger.info(f"   📋 Summary:  {'✅' if results['summary_updated'] else '⏭️'}")
+            logger.info(f"   📄 Resume:   {results['resume_status']}")
+            logger.info(f"   📝 Headline: {results['headline_status']}")
+            logger.info(f"   🔧 Skills:   {results['skills_status']}")
+            logger.info(f"   📋 Summary:  {results['summary_status']}")
             notifier.send_success(results)
 
             # ── Step 7: Parse & Send Performance Metrics + DB Save ──

@@ -31,25 +31,26 @@ class Notifier:
             return
 
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M IST")
-        resume_status = "✅ Uploaded" if details.get("resume_uploaded") else "⏭️ Skipped"
-        headline_status = "✅ Rotated" if details.get("headline_rotated") else "⏭️ Skipped"
-        skills_status = "✅ Updated" if details.get("skills_updated") else "⏭️ Skipped"
-        summary_status = "✅ Updated" if details.get("summary_updated") else "⏭️ Skipped"
+        profile_name = self.config.profile_id.upper()
 
         message = (
-            f"🎯 *Naukri Profile Updated!*\n"
+            f"🎯 *Naukri Profile Updated! [{profile_name}]*\n"
             f"━━━━━━━━━━━━━━━━━\n"
-            f"🕐 {timestamp}\n\n"
-            f"📄 Resume: {resume_status}\n"
-            f"📝 Headline: {headline_status}\n"
-            f"🔧 Skills: {skills_status}\n"
-            f"📋 Summary: {summary_status}\n\n"
-            f"💡 _Your profile is now fresh on Resdex!_"
+            f"👤 *Profile*: `{profile_name}`\n"
+            f"🕐 *Time*: `{timestamp}`\n\n"
+            f"📄 Resume Upload: {details.get('resume_status', '⏭️ Skipped')}\n"
+            f"📝 Headline Rotation: {details.get('headline_status', '⏭️ Skipped')}\n"
+            f"🔧 Key Skills Update: {details.get('skills_status', '⏭️ Skipped')}\n"
+            f"📋 Profile Summary: {details.get('summary_status', '⏭️ Skipped')}\n\n"
         )
 
-        if details.get("headline_text"):
-            message += f"\n\n🏷️ Headline: _{details['headline_text']}_"
+        if details.get("failures"):
+            message += f"⚠️ *Step Failures*:\n" + "\n".join([f"• {f}" for f in details["failures"]]) + "\n\n"
 
+        if details.get("headline_text"):
+            message += f"🏷️ *Active Headline*: _{details['headline_text']}_\n\n"
+
+        message += f"💡 _Your profile is fresh on Resdex!_"
         self._send_message(message)
 
     def send_dry_run(self) -> None:
@@ -59,10 +60,12 @@ class Notifier:
             return
 
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M IST")
+        profile_name = self.config.profile_id.upper()
         message = (
-            f"🔕 *Naukri Dry Run Verified!*\n"
+            f"🔕 *Naukri Dry Run Verified! [{profile_name}]*\n"
             f"━━━━━━━━━━━━━━━━━\n"
-            f"🕐 {timestamp}\n\n"
+            f"👤 *Profile*: `{profile_name}`\n"
+            f"🕐 *Time*: `{timestamp}`\n\n"
             f"✅ Login status verified successfully\n"
             f"💾 Session cookies saved for reuse\n\n"
             f"💡 _No profile changes were made (Dry-Run Mode)._"
@@ -76,6 +79,7 @@ class Notifier:
             return
 
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M IST")
+        profile_name = self.config.profile_id.upper()
 
         summary = perf_data.get("overall_summary") or "Analytics Summary"
         breakdown = "\n".join([f"• {b}" for b in perf_data.get("action_breakdown", [])])
@@ -84,9 +88,10 @@ class Notifier:
         skills = "\n".join(perf_data.get("trending_skills", [])[:5])
 
         message = (
-            f"📊 *Naukri Profile Performance Analytics*\n"
+            f"📊 *Naukri Performance Analytics [{profile_name}]*\n"
             f"━━━━━━━━━━━━━━━━━\n"
-            f"🕐 {timestamp}\n\n"
+            f"👤 *Profile*: `{profile_name}`\n"
+            f"🕐 *Time*: `{timestamp}`\n\n"
             f"📈 *Activity Overview*:\n_{summary}_\n"
         )
 
@@ -97,27 +102,34 @@ class Notifier:
             message += f"\n💼 *Recent Recruiter Actions*:\n{activities}\n"
 
         if keywords:
-            message += f"\n🔑 *Top Keywords You Appeared For*:\n{keywords}\n"
+            message += f"\n🔑 *Top Search Keywords*:\n{keywords}\n"
 
         if skills:
             message += f"\n⚡ *Trending Relevant Skills*:\n{skills}\n"
 
         self._send_message(message)
 
-    def send_failure(self, error: str, screenshot_path: Optional[str] = None) -> None:
+    def send_failure(self, error: str, failed_step: Optional[str] = None, screenshot_path: Optional[str] = None) -> None:
         """Send a failure notification with error details."""
         if not self.enabled:
             logger.info("📱 Telegram not configured — skipping failure notification")
             return
 
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M IST")
+        profile_name = self.config.profile_id.upper()
 
         message = (
-            f"❌ *Naukri Update FAILED*\n"
+            f"❌ *Naukri Update FAILED [{profile_name}]*\n"
             f"━━━━━━━━━━━━━━━━━\n"
-            f"🕐 {timestamp}\n\n"
-            f"🔴 Error: `{error[:500]}`\n\n"
-            f"💡 _Check logs for details. May need manual login._"
+            f"👤 *Profile*: `{profile_name}`\n"
+            f"🕐 *Time*: `{timestamp}`\n\n"
+        )
+
+        if failed_step:
+            message += f"📍 *Failed at Step*: `{failed_step}`\n"
+
+        message += f"🔴 *Error*: `{error[:400]}`\n\n"
+        message += f"💡 _Check logs/screenshots for details._"
         )
 
         self._send_message(message)
