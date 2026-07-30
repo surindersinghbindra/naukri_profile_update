@@ -1,26 +1,34 @@
-name: 🚀 Deploy Naukri Profile Updater & Dashboard
+name: 🚀 Deploy Naukri Profile Updater via Tailscale
 
 on:
   push:
     branches:
       - main
       - master
+  workflow_dispatch:
 
 jobs:
   deploy:
-    name: 📦 Pull Code & Rebuild Docker Stack
+    name: 📦 Deploy to Home Server via Tailscale
     runs-on: ubuntu-latest
 
     steps:
+      - name: 🔒 Connect to Tailscale Network
+        uses: tailscale/github-action@v2
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+
       - name: 🔐 SSH Remote Deployment & Docker Compose Update
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SERVER_HOST }}
+          host: ${{ secrets.TAILSCALE_SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT || 22 }}
+          timeout: 30s
+          command_timeout: 10m
           script: |
-            echo "🚀 Starting Deployment on Server..."
+            echo "🚀 Starting Deployment on Home Server..."
             cd ${{ secrets.SERVER_PROJECT_PATH || '~/naukri_profile_update' }}
 
             echo "📦 Fetching latest code from git..."

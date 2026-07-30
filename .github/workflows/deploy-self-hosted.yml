@@ -1,10 +1,7 @@
-name: 🚀 Deploy via Self-Hosted Runner
+name: 🚀 Deploy via Self-Hosted Runner (Disabled on Push)
 
+# Disabled automatic push triggers
 on:
-  push:
-    branches:
-      - main
-      - master
   workflow_dispatch:
 
 jobs:

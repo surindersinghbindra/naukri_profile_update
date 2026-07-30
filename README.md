@@ -264,23 +264,21 @@ docker compose exec postgres psql -U naukri_user -d naukri_analytics -c "SELECT 
 
 ---
 
-## 🤖 GitHub Actions Automated Deployment
+## 🤖 GitHub Actions Automated Deployment via Tailscale
 
-Automated CI/CD workflows are included in `.github/workflows/`:
+Automated CI/CD deployment workflow is configured in `.github/workflows/deploy.yml`:
 
-### Option 1: Remote Server SSH Deployment (`.github/workflows/deploy.yml`)
-Pushes to `main` or `master` branch automatically SSH into your deployment server, pull latest code, execute `docker compose down`, rebuild images, and restart services cleanly.
+Pushes to `main` or `master` branch automatically connect to your home server over your secure **Tailscale Network**, pull the latest code, execute `docker compose down`, rebuild images, and restart services cleanly.
 
-**Required GitHub Repository Secrets** (`Settings -> Secrets and variables -> Actions`):
-- `SERVER_HOST`: Server IP address or hostname
-- `SERVER_USER`: SSH username (e.g. `ubuntu`, `root`)
-- `SSH_PRIVATE_KEY`: Your SSH private key
-- `SERVER_PROJECT_PATH`: Path to project directory on server (e.g. `~/naukri_profile_update`)
+### 🔐 Required GitHub Repository Secrets
+Go to your GitHub repo → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**:
 
-### Option 2: Self-Hosted Runner Deployment (`.github/workflows/deploy-self-hosted.yml`)
-If your server runs a GitHub Actions self-hosted runner, pushing code automatically executes:
-```bash
-docker compose down
-docker compose up -d --build
-```
+| Secret Name | Value Example | Description |
+|-------------|---------------|-------------|
+| `TAILSCALE_AUTHKEY` | `tskey-auth-k123456789...` | Ephemeral or reusable key from Tailscale Admin Console |
+| `TAILSCALE_SERVER_IP` | `100.110.120.130` | Your home server's Tailscale IP address |
+| `SERVER_USER` | `surindersingh` | SSH username on your home server |
+| `SSH_PRIVATE_KEY` | `-----BEGIN OPENSSH PRIVATE KEY-----...` | Your SSH private key |
+| `SERVER_PROJECT_PATH` | `~/naukri_profile_update` | Path to project folder on home server |
+
 
