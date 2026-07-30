@@ -63,15 +63,35 @@ def upload_resume(page: Page, config: Config) -> bool:
 
     # ── Strategy 0: Direct set_input_files on hidden input[type='file'] (Most Reliable) ──
     try:
-        file_input = page.locator("input[type='file']").first
-        if file_input.count() > 0:
+        # Prefer resume-specific selectors (ids referenced by Naukri's Update
+        # button/input elsewhere in this flow) over a page-wide input[type='file'],
+        # which could match an unrelated hidden input (e.g. profile photo upload).
+        file_input = page.locator(
+            "input#attachCV, input#resume, input[type='file'][name='resume']"
+        ).first
+
+        if file_input.count() == 0:
+            generic_inputs = page.locator("input[type='file']")
+            generic_count = generic_inputs.count()
+            if generic_count == 1:
+                file_input = generic_inputs.first
+            else:
+                file_input = None
+                if generic_count > 1:
+                    logger.warning(
+                        f"⚠️  Found {generic_count} unscoped file inputs and no resume-specific "
+                        "one — skipping direct-input strategy to avoid uploading to the wrong field."
+                    )
+
+        if file_input is not None and file_input.count() > 0:
             logger.info("📤 Setting resume file via native input[type='file'] element...")
             file_input.set_input_files(str(resume_path))
             logger.info("✅ Resume file attached to input element!")
             human_delay(4, 7)
-            _wait_for_upload_confirmation(page, config)
-            logger.info("✅ Resume uploaded successfully!")
-            return True
+            if _wait_for_upload_confirmation(page, config):
+                logger.info("✅ Resume uploaded successfully!")
+                return True
+            logger.warning("⚠️  Strategy 0 set the file but no upload confirmation was detected — trying next strategy.")
     except Exception as exc:
         logger.warning(f"Strategy 0 (Direct set_input_files) failed: {exc}")
 
@@ -103,9 +123,10 @@ def upload_resume(page: Page, config: Config) -> bool:
             logger.info("✅ File selected in file chooser!")
             human_delay(4, 7)
 
-            _wait_for_upload_confirmation(page, config)
-            logger.info("✅ Resume uploaded successfully!")
-            return True
+            if _wait_for_upload_confirmation(page, config):
+                logger.info("✅ Resume uploaded successfully!")
+                return True
+            logger.warning("⚠️  Strategy 1 set the file but no upload confirmation was detected — trying next strategy.")
     except Exception as exc:
         logger.warning(f"Strategy 1 (Update button + File Chooser) failed: {exc}")
 
@@ -121,9 +142,10 @@ def upload_resume(page: Page, config: Config) -> bool:
             logger.info("📤 Resume file set via input element")
             human_delay(4, 7)
 
-            _wait_for_upload_confirmation(page, config)
-            logger.info("✅ Resume uploaded successfully!")
-            return True
+            if _wait_for_upload_confirmation(page, config):
+                logger.info("✅ Resume uploaded successfully!")
+                return True
+            logger.warning("⚠️  Strategy 2 set the file but no upload confirmation was detected.")
     except Exception as exc:
         logger.warning(f"Strategy 2 (Direct input) failed: {exc}")
 
@@ -135,8 +157,8 @@ def upload_resume(page: Page, config: Config) -> bool:
     return False
 
 
-def _wait_for_upload_confirmation(page: Page, config: Config) -> None:
-    """Wait for visual confirmation that the resume was uploaded."""
+def _wait_for_upload_confirmation(page: Page, config: Config) -> bool:
+    """Wait for visual confirmation that the resume was uploaded. Returns True if detected."""
     try:
         # Look for success indicators or updated timestamp on page
         success = page.locator('text="successfully"').or_(
@@ -151,5 +173,7 @@ def _wait_for_upload_confirmation(page: Page, config: Config) -> None:
 
         success.first.wait_for(state="visible", timeout=15000)
         logger.info("📋 Upload confirmation detected")
+        return True
     except PlaywrightTimeout:
-        logger.info("📋 No explicit toast notification, but upload action completed")
+        logger.info("📋 No explicit toast notification detected within timeout")
+        return False
