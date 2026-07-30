@@ -149,10 +149,18 @@ def load_config(profile_id: Optional[str] = None) -> Config:
         key_skills = parse_list("KEY_SKILLS", "")
 
     raw_resume_path = os.getenv("RESUME_PATH", f"profiles/{profile_id}/resumes/resume.pdf")
-    if raw_resume_path.startswith("/app/") and not Path(raw_resume_path).is_file():
-        local_fallback = Path(raw_resume_path.replace("/app/", "./"))
-        if local_fallback.is_file():
-            raw_resume_path = str(local_fallback.resolve())
+
+    # Smart path fallback for profile subdirectories
+    candidate_paths = [
+        Path(raw_resume_path),
+        Path(f"profiles/{profile_id}/resumes/{Path(raw_resume_path).name}"),
+        Path(f"profiles/{profile_id}/resumes/resume.pdf"),
+        Path(f"resumes/{Path(raw_resume_path).name}"),
+    ]
+    for cp in candidate_paths:
+        if cp.is_file():
+            raw_resume_path = str(cp.resolve())
+            break
 
     default_log_dir = f"logs/{profile_id}"
     default_session_dir = f"profiles/{profile_id}/session_storage"
