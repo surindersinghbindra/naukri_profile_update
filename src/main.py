@@ -47,10 +47,16 @@ def main():
         action="store_true",
         help="Skip random schedule start delay jitter",
     )
+    parser.add_argument(
+        "--profile",
+        type=str,
+        default=None,
+        help="Profile ID to run (e.g. profile_1 or profile_2)",
+    )
     args = parser.parse_args()
 
     # Load configuration
-    config = load_config()
+    config = load_config(args.profile)
 
     # Setup logging
     logger = setup_logging(config.log_level, config.log_dir)

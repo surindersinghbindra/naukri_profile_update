@@ -98,6 +98,7 @@ def init_db(config: Config) -> None:
                 """
                 CREATE TABLE IF NOT EXISTS performance_snapshots (
                     id SERIAL PRIMARY KEY,
+                    profile_id VARCHAR(50) DEFAULT 'profile_1',
                     timestamp TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     target_role VARCHAR(255),
                     overall_summary TEXT,
@@ -105,6 +106,8 @@ def init_db(config: Config) -> None:
                     weekly_trend_pct INT DEFAULT 0,
                     trend_direction VARCHAR(20) DEFAULT 'stable'
                 );
+
+                ALTER TABLE performance_snapshots ADD COLUMN IF NOT EXISTS profile_id VARCHAR(50) DEFAULT 'profile_1';
 
                 CREATE TABLE IF NOT EXISTS action_breakdowns (
                     id SERIAL PRIMARY KEY,
@@ -142,6 +145,7 @@ def init_db(config: Config) -> None:
                 """
                 CREATE TABLE IF NOT EXISTS performance_snapshots (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    profile_id TEXT DEFAULT 'profile_1',
                     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     target_role TEXT,
                     overall_summary TEXT,
@@ -185,6 +189,11 @@ def init_db(config: Config) -> None:
                 );
                 """
             )
+            # Migration check for SQLite
+            try:
+                cur.execute("ALTER TABLE performance_snapshots ADD COLUMN profile_id TEXT DEFAULT 'profile_1'")
+            except Exception:
+                pass
 
         conn.commit()
         cur.close()
@@ -231,21 +240,21 @@ def save_performance_snapshot(perf_data: Dict[str, Any], config: Config) -> Opti
             cur.execute(
                 """
                 INSERT INTO performance_snapshots
-                (target_role, overall_summary, total_actions, weekly_trend_pct, trend_direction)
-                VALUES (%s, %s, %s, %s, %s)
+                (profile_id, target_role, overall_summary, total_actions, weekly_trend_pct, trend_direction)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id;
                 """,
-                (config.target_role, summary, total_actions, weekly_trend_pct, trend_direction),
+                (config.profile_id, config.target_role, summary, total_actions, weekly_trend_pct, trend_direction),
             )
             snapshot_id = cur.fetchone()[0]
         else:
             cur.execute(
                 """
                 INSERT INTO performance_snapshots
-                (target_role, overall_summary, total_actions, weekly_trend_pct, trend_direction)
-                VALUES (?, ?, ?, ?, ?);
+                (profile_id, target_role, overall_summary, total_actions, weekly_trend_pct, trend_direction)
+                VALUES (?, ?, ?, ?, ?, ?);
                 """,
-                (config.target_role, summary, total_actions, weekly_trend_pct, trend_direction),
+                (config.profile_id, config.target_role, summary, total_actions, weekly_trend_pct, trend_direction),
             )
             snapshot_id = cur.lastrowid
 

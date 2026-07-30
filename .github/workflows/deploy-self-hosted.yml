@@ -1,0 +1,25 @@
+name: 🚀 Deploy via Self-Hosted Runner
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy-local:
+    name: 📦 Pull Code & Rebuild Docker Stack (Self-Hosted)
+    runs-on: self-hosted
+
+    steps:
+      - name: 📥 Checkout latest code
+        uses: actions/checkout@v4
+
+      - name: 🐳 Rebuild & Restart Docker Compose Stack
+        run: |
+          echo "🚀 Starting Self-Hosted Deployment..."
+          docker compose down
+          docker compose up -d --build
+          docker compose ps
+          echo "🎉 Deployment complete!"

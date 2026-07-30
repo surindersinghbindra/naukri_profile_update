@@ -20,6 +20,9 @@ load_dotenv()
 class Config:
     """Centralized configuration loaded from environment variables."""
 
+    # ── Profile ID ──
+    profile_id: str = "profile_1"
+
     # ── Naukri Credentials ──
     naukri_email: str = ""
     naukri_password: str = ""
@@ -87,21 +90,29 @@ class Config:
         return self.enable_skills_update and bool(self.key_skills)
 
 
-def load_config() -> Config:
+def load_config(profile_id: Optional[str] = None) -> Config:
     """Load configuration from environment variables with validation."""
+    if not profile_id:
+        profile_id = os.getenv("PROFILE_ID", "profile_1")
+
+    # Load profile-specific .env if present
+    profile_env = Path(f"profiles/{profile_id}/.env")
+    if profile_env.is_file():
+        load_dotenv(str(profile_env), override=True)
+    else:
+        load_dotenv(override=True)
 
     def parse_list(env_var: str, default: str = "") -> list[str]:
         raw = os.getenv(env_var, default)
         return [item.strip() for item in raw.split(",") if item.strip()]
 
-    def parse_delay_range(env_var: str, default: str = "2,5") -> tuple[float, float]:
-        raw = os.getenv(env_var, default)
-        parts = raw.split(",")
-        if len(parts) == 2:
-            return float(parts[0].strip()), float(parts[1].strip())
-        return 2.0, 5.0
-
-    delay_min, delay_max = parse_delay_range("HUMAN_DELAY_RANGE")
+    # Parse human delay range
+    human_delay_raw = os.getenv("HUMAN_DELAY_RANGE", "2,5")
+    try:
+        parts = [float(x.strip()) for x in human_delay_raw.split(",")]
+        delay_min, delay_max = parts[0], parts[1]
+    except Exception:
+        delay_min, delay_max = 2.0, 5.0
 
     default_headlines = (
         "Senior Software Engineer | Python | AWS | Microservices,"
@@ -136,13 +147,17 @@ def load_config() -> Config:
     else:
         key_skills = parse_list("KEY_SKILLS", "")
 
-    raw_resume_path = os.getenv("RESUME_PATH", "/app/resumes/resume.pdf")
+    raw_resume_path = os.getenv("RESUME_PATH", f"profiles/{profile_id}/resumes/resume.pdf")
     if raw_resume_path.startswith("/app/") and not Path(raw_resume_path).is_file():
         local_fallback = Path(raw_resume_path.replace("/app/", "./"))
         if local_fallback.is_file():
             raw_resume_path = str(local_fallback.resolve())
 
+    default_log_dir = f"logs/{profile_id}"
+    default_session_dir = f"profiles/{profile_id}/session_storage"
+
     config = Config(
+        profile_id=profile_id,
         naukri_email=os.getenv("NAUKRI_EMAIL", ""),
         naukri_password=os.getenv("NAUKRI_PASSWORD", ""),
         enable_resume_upload=parse_bool("ENABLE_RESUME_UPLOAD", "true"),
@@ -170,9 +185,9 @@ def load_config() -> Config:
         human_delay_max=delay_max,
         max_retries=int(os.getenv("MAX_RETRIES", "3")),
         log_level=os.getenv("LOG_LEVEL", "INFO").upper(),
-        log_dir=os.getenv("LOG_DIR", "logs"),
-        screenshot_dir=os.getenv("SCREENSHOT_DIR", "logs"),
-        session_dir=os.getenv("SESSION_DIR", "session_storage"),
+        log_dir=os.getenv("LOG_DIR", default_log_dir),
+        screenshot_dir=os.getenv("SCREENSHOT_DIR", default_log_dir),
+        session_dir=os.getenv("SESSION_DIR", default_session_dir),
     )
 
     # Validate required fields

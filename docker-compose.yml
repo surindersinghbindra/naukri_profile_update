@@ -11,7 +11,6 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      # Host volume mount for PostgreSQL data persistence
       - ./postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-naukri_user} -d ${POSTGRES_DB:-naukri_analytics}"]
@@ -19,50 +18,65 @@ services:
       timeout: 5s
       retries: 5
 
-  # ── Naukri Profile Updater Automation Service ────────────────
-  naukri-updater:
+  # ── Profile 1 Automation Service ─────────────────────────────
+  updater-profile1:
     build: .
-    container_name: naukri-profile-updater
+    container_name: naukri-updater-profile1
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
 
     env_file:
-      - .env
+      - ./profiles/profile_1/.env
 
     volumes:
-      # Mount your resume PDF
-      - ./resumes:/app/resumes:ro
-
-      # Persist logs and screenshots
-      - ./logs:/app/logs
-
-      # Persist session cookies (avoids re-login)
-      - naukri_session:/app/session_storage
+      - ./profiles/profile_1/resumes:/app/profiles/profile_1/resumes:ro
+      - ./logs/profile_1:/app/logs/profile_1
+      - ./profiles/profile_1/session_storage:/app/profiles/profile_1/session_storage
 
     environment:
+      - PROFILE_ID=profile_1
       - TZ=Asia/Kolkata
       - PYTHONUNBUFFERED=1
       - POSTGRES_HOST=postgres
 
-    # Shared memory for Chromium (prevents crashes)
     shm_size: "256m"
-
-    # Resource limits
     deploy:
       resources:
         limits:
           memory: 1g
           cpus: "1.0"
-        reservations:
-          memory: 512m
 
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+  # ── Profile 2 Automation Service ─────────────────────────────
+  updater-profile2:
+    build: .
+    container_name: naukri-updater-profile2
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    env_file:
+      - ./profiles/profile_2/.env
+
+    volumes:
+      - ./profiles/profile_2/resumes:/app/profiles/profile_2/resumes:ro
+      - ./logs/profile_2:/app/logs/profile_2
+      - ./profiles/profile_2/session_storage:/app/profiles/profile_2/session_storage
+
+    environment:
+      - PROFILE_ID=profile_2
+      - TZ=Asia/Kolkata
+      - PYTHONUNBUFFERED=1
+      - POSTGRES_HOST=postgres
+
+    shm_size: "256m"
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "1.0"
 
   # ── Streamlit Analytics Dashboard Service ────────────────────
   dashboard:
@@ -78,16 +92,10 @@ services:
     ports:
       - "8501:8501"
 
-    env_file:
-      - .env
-
     volumes:
       - ./logs:/app/logs
+      - ./profiles:/app/profiles
 
     environment:
       - POSTGRES_HOST=postgres
       - PYTHONUNBUFFERED=1
-
-volumes:
-  naukri_session:
-    driver: local
