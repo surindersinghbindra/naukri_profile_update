@@ -1,9 +1,30 @@
-# Naukri Profile Update Automation
+# Naukri Profile Update Automation — .gitignore
 
-# Credentials (gitignored)
+# Credentials & Environment Files
 .env
+profiles/*/.env
 
-# Python
+# Resume PDF Files (Gitignored for privacy)
+resumes/*.pdf
+profiles/*/resumes/*.pdf
+*.pdf
+
+# Logs, Database & Screenshots
+logs/
+logs/*
+profiles/*/logs/
+*.log
+*.png
+*.db
+postgres_data/
+
+# Session Data & Cookies
+session_storage/
+profiles/*/session_storage/
+*.json
+!package.json
+
+# Python Virtual Environment & Cache
 __pycache__/
 *.py[cod]
 *$py.class
@@ -15,25 +36,13 @@ build/
 venv/
 .venv/
 
-# Logs and screenshots
-logs/*.log
-logs/*.png
-!logs/.gitkeep
-
-# IDE
+# IDE & OS Files
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# OS
 .DS_Store
 Thumbs.db
 
 # Docker
 docker-compose.override.yml
-
-# Session data
-session_storage/
-*.json
-!package.json
