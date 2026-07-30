@@ -1,0 +1,93 @@
+services:
+  # ── PostgreSQL Database Service ─────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: naukri-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-naukri_analytics}
+      POSTGRES_USER: ${POSTGRES_USER:-naukri_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-naukri_secure_password_123}
+    ports:
+      - "5432:5432"
+    volumes:
+      # Host volume mount for PostgreSQL data persistence
+      - ./postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-naukri_user} -d ${POSTGRES_DB:-naukri_analytics}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Naukri Profile Updater Automation Service ────────────────
+  naukri-updater:
+    build: .
+    container_name: naukri-profile-updater
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    env_file:
+      - .env
+
+    volumes:
+      # Mount your resume PDF
+      - ./resumes:/app/resumes:ro
+
+      # Persist logs and screenshots
+      - ./logs:/app/logs
+
+      # Persist session cookies (avoids re-login)
+      - naukri_session:/app/session_storage
+
+    environment:
+      - TZ=Asia/Kolkata
+      - PYTHONUNBUFFERED=1
+      - POSTGRES_HOST=postgres
+
+    # Shared memory for Chromium (prevents crashes)
+    shm_size: "256m"
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "1.0"
+        reservations:
+          memory: 512m
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── Streamlit Analytics Dashboard Service ────────────────────
+  dashboard:
+    build: .
+    container_name: naukri-analytics-dashboard
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    entrypoint: ["streamlit", "run", "dashboard.py", "--server.port=8501", "--server.address=0.0.0.0"]
+
+    ports:
+      - "8501:8501"
+
+    env_file:
+      - .env
+
+    volumes:
+      - ./logs:/app/logs
+
+    environment:
+      - POSTGRES_HOST=postgres
+      - PYTHONUNBUFFERED=1
+
+volumes:
+  naukri_session:
+    driver: local

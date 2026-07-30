@@ -1,0 +1,39 @@
+# Naukri Profile Update Automation
+
+# Credentials (gitignored)
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+.venv/
+
+# Logs and screenshots
+logs/*.log
+logs/*.png
+!logs/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Session data
+session_storage/
+*.json
+!package.json
