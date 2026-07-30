@@ -63,6 +63,17 @@ def human_mouse_move(page, target_x: int, target_y: int, min_steps: int = 15, ma
         pass
 
 
+def human_type(locator, text: str, min_delay_ms: float = 60, max_delay_ms: float = 180) -> None:
+    """
+    Type text one character at a time, dispatching real keydown/input/keyup
+    events per keystroke with randomized inter-key delay — unlike Locator.fill(),
+    which sets the value directly via CDP with no keystroke events at all.
+    """
+    for char in text:
+        locator.press_sequentially(char)
+        time.sleep(random.uniform(min_delay_ms, max_delay_ms) / 1000)
+
+
 def random_human_activity(page) -> None:
     """
     Perform natural human-like pre-action behavior:

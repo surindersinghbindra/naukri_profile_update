@@ -8,7 +8,7 @@ import logging
 from playwright.sync_api import Page, TimeoutError as PlaywrightTimeout
 
 from .config import Config
-from .utils import human_delay, take_screenshot
+from .utils import human_delay, human_type, take_screenshot
 
 logger = logging.getLogger("naukri_updater")
 
@@ -70,7 +70,7 @@ def login(page: Page, config: Config) -> bool:
 
     email_input.fill("")
     human_delay(0.5, 1)
-    email_input.fill(config.naukri_email)
+    human_type(email_input, config.naukri_email)
     logger.info(f"📧 Entered email: {config.naukri_email[:3]}***")
     human_delay(1, 2)
 
@@ -81,7 +81,7 @@ def login(page: Page, config: Config) -> bool:
 
     password_input.fill("")
     human_delay(0.5, 1)
-    password_input.fill(config.naukri_password)
+    human_type(password_input, config.naukri_password)
     logger.info("🔑 Entered password")
     human_delay(1, 2)
 

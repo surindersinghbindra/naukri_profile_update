@@ -80,8 +80,48 @@ class BrowserManager:
             """
             Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
             Object.defineProperty(navigator, 'languages', { get: () => ['en-IN', 'en-US', 'en'] });
-            Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
             window.chrome = { runtime: {} };
+
+            // Spoof navigator.plugins with real PDF-viewer entries built on the actual
+            // Plugin/PluginArray prototypes, instead of a bare array of numbers — the
+            // latter fails `plugins[0] instanceof Plugin` checks used by fingerprinting libs.
+            (() => {
+                const pluginData = [
+                    { name: 'PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' },
+                    { name: 'Chrome PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' },
+                    { name: 'Chromium PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' },
+                    { name: 'Microsoft Edge PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' },
+                    { name: 'WebKit built-in PDF', filename: 'internal-pdf-viewer', description: 'Portable Document Format' },
+                ];
+
+                const makePlugin = (data) => {
+                    const plugin = Object.create(Plugin.prototype);
+                    Object.defineProperties(plugin, {
+                        name: { value: data.name, enumerable: true },
+                        filename: { value: data.filename, enumerable: true },
+                        description: { value: data.description, enumerable: true },
+                        length: { value: 1, enumerable: true },
+                    });
+                    return plugin;
+                };
+
+                const plugins = pluginData.map(makePlugin);
+                const pluginArray = Object.create(PluginArray.prototype);
+                plugins.forEach((p, i) => {
+                    pluginArray[i] = p;
+                    pluginArray[p.name] = p;
+                });
+                Object.defineProperty(pluginArray, 'length', { value: plugins.length });
+                pluginArray.item = function (i) { return this[i] || null; };
+                pluginArray.namedItem = function (name) { return this[name] || null; };
+                pluginArray.refresh = function () {};
+
+                Object.defineProperty(Navigator.prototype, 'plugins', {
+                    get: () => pluginArray,
+                    configurable: true,
+                    enumerable: true,
+                });
+            })();
             """
         )
 

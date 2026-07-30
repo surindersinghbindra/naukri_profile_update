@@ -11,7 +11,7 @@ from datetime import datetime
 from playwright.sync_api import Page, TimeoutError as PlaywrightTimeout
 
 from .config import Config
-from .utils import human_delay, take_screenshot
+from .utils import human_delay, human_type, take_screenshot
 
 logger = logging.getLogger("naukri_updater")
 
@@ -88,7 +88,7 @@ def rotate_headline(page: Page, config: Config) -> bool:
         # Clear existing content and type new headline
         headline_input.first.fill("")
         human_delay(0.5, 1)
-        headline_input.first.fill(new_headline)
+        human_type(headline_input.first, new_headline)
         logger.info("✍️  Headline text updated")
         human_delay(1, 2)
 

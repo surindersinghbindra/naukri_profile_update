@@ -10,7 +10,7 @@ from datetime import datetime
 from playwright.sync_api import Page, TimeoutError as PlaywrightTimeout
 
 from .config import Config
-from .utils import human_delay, take_screenshot
+from .utils import human_delay, human_type, take_screenshot
 
 logger = logging.getLogger("naukri_updater")
 
@@ -78,7 +78,7 @@ def update_key_skills(page: Page, config: Config) -> bool:
             random.shuffle(shuffled)
             new_skill = shuffled[0] if shuffled else "Python"
 
-            skills_input.first.fill(new_skill)
+            human_type(skills_input.first, new_skill)
             human_delay(0.5, 1)
 
             # Press Enter to add the skill
@@ -174,7 +174,9 @@ def update_profile_summary(page: Page, config: Config) -> bool:
             timestamp = datetime.now().strftime('%m%d%H')
             updated_text = f"{cleaned}\u200b{timestamp}"
 
-            summary_input.first.fill(updated_text)
+            summary_input.first.fill("")
+            human_delay(0.5, 1)
+            human_type(summary_input.first, updated_text)
             logger.info("✍️  Summary updated with invisible timestamp")
             human_delay(1, 2)
 
