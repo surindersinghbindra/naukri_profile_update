@@ -20,8 +20,9 @@ load_dotenv()
 class Config:
     """Centralized configuration loaded from environment variables."""
 
-    # ── Profile ID ──
+    # ── Profile ID & Enable Toggle ──
     profile_id: str = "profile_1"
+    enable_profile: bool = True
 
     # ── Naukri Credentials ──
     naukri_email: str = ""
@@ -158,6 +159,7 @@ def load_config(profile_id: Optional[str] = None) -> Config:
 
     config = Config(
         profile_id=profile_id,
+        enable_profile=parse_bool("ENABLE_PROFILE", "true"),
         naukri_email=os.getenv("NAUKRI_EMAIL", ""),
         naukri_password=os.getenv("NAUKRI_PASSWORD", ""),
         enable_resume_upload=parse_bool("ENABLE_RESUME_UPLOAD", "true"),

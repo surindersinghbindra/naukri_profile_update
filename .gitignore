@@ -4,10 +4,11 @@
 .env
 profiles/*/.env
 
-# Resume PDF Files (Gitignored for privacy)
+# Resume PDF Files (Gitignored for privacy, folder structure preserved via .gitkeep)
 resumes/*.pdf
 profiles/*/resumes/*.pdf
 *.pdf
+!.gitkeep
 
 # Logs, Database & Screenshots
 logs/

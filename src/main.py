@@ -61,6 +61,11 @@ def main():
     # Setup logging
     logger = setup_logging(config.log_level, config.log_dir)
 
+    # Check if profile is enabled
+    if not config.enable_profile:
+        logger.info(f"⏭️  SKIPPED — Profile '{config.profile_id}' is disabled (ENABLE_PROFILE=false)")
+        return 0
+
     # Apply random start delay jitter if configured and not disabled
     if not args.no_jitter and not args.dry_run:
         import random
