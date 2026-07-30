@@ -31,6 +31,7 @@ services:
       - ./profiles/profile_1/.env
 
     volumes:
+      - ./profiles/profile_1/resumes:/app/resumes:ro
       - ./profiles/profile_1/resumes:/app/profiles/profile_1/resumes:ro
       - ./logs/profile_1:/app/logs/profile_1
       - ./profiles/profile_1/session_storage:/app/profiles/profile_1/session_storage
@@ -61,6 +62,7 @@ services:
       - ./profiles/profile_2/.env
 
     volumes:
+      - ./profiles/profile_2/resumes:/app/resumes:ro
       - ./profiles/profile_2/resumes:/app/profiles/profile_2/resumes:ro
       - ./logs/profile_2:/app/logs/profile_2
       - ./profiles/profile_2/session_storage:/app/profiles/profile_2/session_storage
