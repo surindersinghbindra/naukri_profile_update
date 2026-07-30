@@ -61,10 +61,24 @@ def upload_resume(page: Page, config: Config) -> bool:
     except Exception as exc:
         logger.warning(f"Could not click left nav Resume link: {exc}")
 
+    # ── Strategy 0: Direct set_input_files on hidden input[type='file'] (Most Reliable) ──
+    try:
+        file_input = page.locator("input[type='file']").first
+        if file_input.count() > 0:
+            logger.info("📤 Setting resume file via native input[type='file'] element...")
+            file_input.set_input_files(str(resume_path))
+            logger.info("✅ Resume file attached to input element!")
+            human_delay(4, 7)
+            _wait_for_upload_confirmation(page, config)
+            logger.info("✅ Resume uploaded successfully!")
+            return True
+    except Exception as exc:
+        logger.warning(f"Strategy 0 (Direct set_input_files) failed: {exc}")
+
     # ── Strategy 1: Find the Update button and trigger File Chooser ──
     try:
         update_btn = page.locator(
-            "button:text-is('Update')"
+            "button:text-is('Update'), label:has-text('Update'), div:has-text('Update resume'), input[id='attachCV']"
         ).or_(
             page.locator("button:has-text('Update resume')")
         ).or_(
