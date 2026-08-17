@@ -125,8 +125,11 @@ def update_profile_summary(page: Page, config: Config) -> bool:
 
     try:
         # Find the profile summary section / edit icon
-        edit_icon = page.locator(
-            '.profileSummary .edit, .profileSummary [class*="edit"], span:text-is("editOneTheme"), text="Profile Summary" >> xpath=..//span[contains(@class, "edit")]'
+        edit_icon = (
+            page.locator('.profileSummary .edit')
+            .or_(page.locator('.profileSummary [class*="edit"]'))
+            .or_(page.locator('span:text-is("editOneTheme")'))
+            .or_(page.locator('.profileSummary'))
         ).first
 
         if edit_icon.is_visible(timeout=4000):
