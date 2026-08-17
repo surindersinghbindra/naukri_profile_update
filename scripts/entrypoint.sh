@@ -22,7 +22,7 @@ env | grep -E '^(NAUKRI_|RESUME_|TARGET_|HEADLINES|KEY_SKILLS|CRON_|TELEGRAM_|HE
 
 # Create the cron job entry
 # python-dotenv in src.main loads .env automatically from /app
-CRON_ENTRY="${CRON_CMD} cd /app && /usr/bin/python -m src.main >> /app/logs/cron.log 2>&1"
+CRON_ENTRY="${CRON_CMD} cd /app && xvfb-run --auto-servernum --server-args=\"-screen 0 1366x768x24\" /usr/bin/python -m src.main >> /app/logs/cron.log 2>&1"
 
 # Install the cron job
 echo "${CRON_ENTRY}" | crontab -
@@ -35,7 +35,7 @@ echo ""
 if [ "${RUN_ON_STARTUP:-true}" = "true" ]; then
     echo "🔄 Running initial update now..."
     cd /app
-    /usr/bin/python -m src.main 2>&1 | tee -a /app/logs/cron.log
+    xvfb-run --auto-servernum --server-args="-screen 0 1366x768x24" /usr/bin/python -m src.main 2>&1 | tee -a /app/logs/cron.log
     echo ""
     echo "✅ Initial run complete. Cron will handle subsequent runs."
 fi

@@ -40,9 +40,10 @@ def upload_resume(page: Page, config: Config) -> bool:
 
     logger.info(f"📄 Uploading resume: {resume_path.name}")
 
-    # Navigate to profile page
-    page.goto(NAUKRI_PROFILE_URL, wait_until="domcontentloaded", timeout=30000)
-    human_delay(2, 3)
+    # Navigate to profile page only if not already there
+    if "profile" not in page.url.lower():
+        page.goto(NAUKRI_PROFILE_URL, wait_until="domcontentloaded", timeout=30000)
+        human_delay(2, 3)
 
     # Perform natural pre-action mouse movement and scrolling
     random_human_activity(page)

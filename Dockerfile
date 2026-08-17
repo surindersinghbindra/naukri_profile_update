@@ -9,9 +9,9 @@ FROM mcr.microsoft.com/playwright/python:v1.52.0-noble
 ENV TZ=Asia/Kolkata
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# Install cron
+# Install cron, tzdata, and xvfb for headless anti-bot stealth
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends cron tzdata && \
+    apt-get install -y --no-install-recommends cron tzdata xvfb && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

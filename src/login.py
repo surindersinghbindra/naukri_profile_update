@@ -22,17 +22,30 @@ def is_logged_in(page: Page) -> bool:
         page.goto(NAUKRI_PROFILE_URL, wait_until="domcontentloaded", timeout=20000)
         human_delay(2, 3)
 
-        current_url = page.url.lower()
+        # Check for Access Denied or bot block
+        page_title = page.title().lower()
+        if "access denied" in page_title or "blocked" in page_title:
+            logger.warning("🔒 Session expired or Access Denied detected — falling back to fresh login...")
+            return False
 
-        # If we stayed on the profile page (not redirected to login), we're logged in
-        if "profile" in current_url and "login" not in current_url:
-            logger.info("✅ Already logged in via saved session")
-            return True
+        current_url = page.url.lower()
 
         # If redirected to login page, session has expired
         if "login" in current_url:
             logger.info("🔒 Session expired — need to login again")
             return False
+
+        # Look for real profile content or navigation links
+        profile_content = page.locator(
+            "text='Resume', text='Profile Summary', text='Key Skills', .n-card, .profile-name"
+        ).first
+        if profile_content.is_visible(timeout=5000):
+            logger.info("✅ Verified logged in via profile page elements")
+            return True
+
+        if "profile" in current_url:
+            logger.info("✅ Profile URL reached")
+            return True
 
     except Exception as exc:
         logger.warning(f"Session check failed: {exc}")
@@ -52,9 +65,9 @@ def login(page: Page, config: Config) -> bool:
     if is_logged_in(page):
         return True
 
-    # Navigate to login page
-    page.goto(NAUKRI_LOGIN_URL, wait_until="domcontentloaded", timeout=30000)
-    human_delay(2, 4)
+    # Navigate directly to login page
+    page.goto(NAUKRI_LOGIN_URL, wait_until="load", timeout=30000)
+    human_delay(2, 3)
 
     # ── Check if Naukri redirected us away from login (session still valid) ──
     current_url = page.url.lower()
@@ -63,34 +76,34 @@ def login(page: Page, config: Config) -> bool:
         return True
 
     # Enter email
-    email_input = page.locator('input[placeholder="Enter your active Email ID / Username"]')
-    if not email_input.is_visible(timeout=10000):
-        # Try alternative selectors — Naukri changes these
-        email_input = page.locator("#usernameField")
-
-    email_input.fill("")
-    human_delay(0.5, 1)
-    human_type(email_input, config.naukri_email)
-    logger.info(f"📧 Entered email: {config.naukri_email[:3]}***")
-    human_delay(1, 2)
+    try:
+        email_input = page.locator('#usernameField, input[placeholder*="Email" i]').first
+        email_input.wait_for(state="visible", timeout=15000)
+        email_input.fill("")
+        human_delay(0.5, 1)
+        human_type(email_input, config.naukri_email)
+        logger.info(f"📧 Entered email: {config.naukri_email[:3]}***")
+        human_delay(1, 2)
+    except Exception as exc:
+        logger.error(f"Could not locate email input: {exc}. Current URL: {page.url}, Title: {page.title()}")
+        raise
 
     # Enter password
-    password_input = page.locator('input[placeholder="Enter your password"]')
-    if not password_input.is_visible(timeout=5000):
-        password_input = page.locator("#passwordField")
+    try:
+        password_input = page.locator('#passwordField, input[placeholder*="Password" i]').first
+        password_input.wait_for(state="visible", timeout=10000)
+        password_input.fill("")
+        human_delay(0.5, 1)
+        human_type(password_input, config.naukri_password)
+        logger.info("🔑 Entered password")
+        human_delay(1, 2)
+    except Exception as exc:
+        logger.error(f"Could not locate password input: {exc}. Current URL: {page.url}, Title: {page.title()}")
+        raise
 
-    password_input.fill("")
-    human_delay(0.5, 1)
-    human_type(password_input, config.naukri_password)
-    logger.info("🔑 Entered password")
-    human_delay(1, 2)
-
-    # Click login button (exact match — avoids matching "Use OTP to Login")
-    login_button = page.get_by_role("button", name="Login", exact=True)
-    if not login_button.is_visible(timeout=5000):
-        # Fallback: target the specific blue login button by class
-        login_button = page.locator('button.blue-btn[type="submit"]')
-
+    # Click login button
+    login_button = page.locator('button.btn-primary, button.blue-btn, button[type="submit"], button:has-text("Login")').first
+    login_button.wait_for(state="visible", timeout=5000)
     login_button.click()
     logger.info("🖱️  Clicked Login button")
     human_delay(3, 5)

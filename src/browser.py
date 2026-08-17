@@ -30,14 +30,18 @@ class BrowserManager:
         self._playwright = sync_playwright().start()
 
         # Launch Chromium with anti-detection settings
+        launch_args = [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-blink-features=AutomationControlled",
+            "--disable-infobars",
+            "--window-size=1366,768",
+        ]
+
         self._browser = self._playwright.chromium.launch(
             headless=self.config.headless,
-            args=[
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--disable-dev-shm-usage",
-                "--disable-blink-features=AutomationControlled",
-            ],
+            args=launch_args,
         )
 
         # Ensure session storage directory exists
@@ -49,7 +53,7 @@ class BrowserManager:
         context_kwargs = {
             "viewport": {"width": 1366, "height": 768},
             "user_agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
                 "Chrome/131.0.0.0 Safari/537.36"
             ),
@@ -63,14 +67,6 @@ class BrowserManager:
             context_kwargs["storage_state"] = str(storage_state)
 
         self._context = self._browser.new_context(**context_kwargs)
-
-        # Block unnecessary resources to speed things up (headless only)
-        # In visible mode, keep everything loaded so you can see the real UI
-        if self.config.headless:
-            self._context.route(
-                "**/*.{png,jpg,jpeg,gif,svg,mp4,webm,woff,woff2,ttf}",
-                lambda route: route.abort(),
-            )
 
         self._page = self._context.new_page()
         self._page.set_default_timeout(30000)  # 30s timeout
