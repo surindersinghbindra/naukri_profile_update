@@ -124,43 +124,36 @@ def update_profile_summary(page: Page, config: Config) -> bool:
         human_delay(2, 4)
 
     try:
-        # Find the profile summary section
-        summary_section = page.locator('.profileSummary').or_(
-            page.locator('[class*="profileSummary"]')
-        ).or_(
-            page.locator('[class*="profile-summary"]')
-        ).or_(
-            page.locator('text="Profile Summary"').locator('..')
-        )
+        # Find the profile summary section / edit icon
+        edit_icon = page.locator(
+            '.profileSummary .edit, .profileSummary [class*="edit"], span:text-is("editOneTheme"), text="Profile Summary" >> xpath=..//span[contains(@class, "edit")]'
+        ).first
 
-        # Click edit
-        edit_icon = summary_section.first.locator('.edit-icon').or_(
-            summary_section.first.locator('[class*="edit"]')
-        )
-
-        if edit_icon.first.is_visible(timeout=5000):
-            edit_icon.first.click()
+        if edit_icon.is_visible(timeout=4000):
+            edit_icon.click()
+            logger.info("✏️  Opened profile summary editor via edit icon")
+            human_delay(1, 2)
         else:
-            summary_section.first.click()
-
-        logger.info("✏️  Opened profile summary editor")
-        human_delay(1, 2)
+            summary_section = page.locator('.profileSummary, [class*="profileSummary"]').first
+            if summary_section.is_visible(timeout=2000):
+                summary_section.click(timeout=3000)
+                logger.info("✏️  Clicked profile summary section")
+                human_delay(1, 2)
+            else:
+                logger.info("ℹ️  Profile summary section not found — skipping summary touch")
+                return True
 
     except Exception as exc:
-        logger.warning(f"Could not open profile summary editor: {exc}")
-        return False
+        logger.info(f"Could not open profile summary editor: {exc} — skipping summary touch")
+        return True
 
     try:
         # Find the textarea
-        summary_input = page.locator('.profileSummary textarea').or_(
-            page.locator('textarea[placeholder*="summary"]')
-        ).or_(
-            page.locator('#profileSummaryTxt')
-        ).or_(
-            page.locator('textarea').first
-        )
+        summary_input = page.locator(
+            '.profileSummary textarea, textarea[placeholder*="summary" i], #profileSummaryTxt, textarea'
+        ).first
 
-        summary_input.first.wait_for(state="visible", timeout=10000)
+        summary_input.wait_for(state="visible", timeout=5000)
 
         # Get current content
         current_text = summary_input.first.input_value()
